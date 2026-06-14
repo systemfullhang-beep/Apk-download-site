@@ -16,9 +16,10 @@ export default async function handler(req) {
     return new Response("Not found", { status: 404 });
   }
 
+  const base = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + BRANCH + "/";
+
   // 1. Load the slug -> file map
-  const linksUrl = https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/links.json;
-  const linksRes = await fetch(linksUrl, { cache: "no-store" });
+  const linksRes = await fetch(base + "links.json", { cache: "no-store" });
   if (!linksRes.ok) {
     return new Response("Storage not initialised", { status: 500 });
   }
@@ -26,7 +27,7 @@ export default async function handler(req) {
   let links;
   try {
     links = await linksRes.json();
-  } catch {
+  } catch (e) {
     return new Response("Invalid links.json", { status: 500 });
   }
 
@@ -35,17 +36,16 @@ export default async function handler(req) {
     return new Response("Link not found", { status: 404 });
   }
 
-  // 2. Stream the APK back to the user
-  const apkUrl = https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${entry.path};
-  const apkRes = await fetch(apkUrl);
+  // 2. Stream the APK back
+  const apkRes = await fetch(base + entry.path);
   if (!apkRes.ok) {
     return new Response("File missing", { status: 404 });
   }
 
-  const filename = entry.filename || ${slug}.apk;
+  const filename = entry.filename || (slug + ".apk");
   const headers = new Headers({
     "Content-Type": "application/vnd.android.package-archive",
-    "Content-Disposition": attachment; filename="${filename}",
+    "Content-Disposition": 'attachment; filename="' + filename + '"',
     "Cache-Control": "public, max-age=300",
   });
   const cl = apkRes.headers.get("content-length");
